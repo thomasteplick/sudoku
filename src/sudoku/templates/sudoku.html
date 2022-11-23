@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="eng">
+	<head>
+		<title>"Sudoku Puzzle"</title>
+		<!-- <link href="../../src/sudoku/css/style.css" type="text/css" rel="stylesheet" /> -->
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<style type="text/css">
+			div.grid {
+				display: grid;
+				grid-template-columns: repeat(9, 1fr);
+				grid-template-rows: repeat(9, 1fr);
+				width: 450px;
+				height: 450px;
+				border-top: 3px solid black;
+				border-bottom: 3px solid black;
+				border-left: 3px solid black;
+			}
+			
+			.item {
+				padding-top: 10px;
+				text-align: center;
+				border: 1px dotted #999;
+				align-content: center;
+			}
+
+			.grid div:nth-child(3n) {
+			border-right: 3px solid black;
+			}
+
+			.grid div:nth-child(19), .grid div:nth-child(20), .grid div:nth-child(21), .grid div:nth-child(22), .grid div:nth-child(23), .grid div:nth-child(24),
+			.grid div:nth-child(25), .grid div:nth-child(26), .grid div:nth-child(27) {
+			border-bottom: 3px solid black;
+			}
+
+			.grid div:nth-child(46), .grid div:nth-child(47), .grid div:nth-child(48), .grid div:nth-child(49), .grid div:nth-child(50), .grid div:nth-child(51),
+			.grid div:nth-child(52), .grid div:nth-child(53), .grid div:nth-child(54) {
+			border-bottom: 3px solid black;
+			}
+
+			.item input[type="text"] {
+				font-family: sans-serif;
+				font-size: 18px;
+				text-align: center;
+				width: 30px;
+				vertical-align: center;
+			}
+
+			.options input {
+				display: inline;
+			}
+
+			label {
+				font-size: 16px;
+				font-family: sans-serif;
+			}
+
+			.item input[type="text"].invalid {
+				background-color: red;
+			}
+
+			input[type="text"]:read-only {
+				background-color: lightgrey;
+			}
+
+			input[type="text"].invalidstatus {
+				color: white;
+				background-color: red;
+			}
+
+			input[type="text"].validstatus {
+				color: white;
+				background-color: blue;
+			}
+
+			input[type="text"].solvedstatus {
+				color: white;
+				background-color: green;
+			}
+
+		</style>
+	</head>
+	<body>
+		<form action="http://127.0.0.1:8080/sudoku-submit" method="post">
+			<fieldset>
+				<legend>Sudoku Puzzle</legend>
+				<div class="grid">
+				    {{range .Grid}}
+				    <div class="item">
+					    <input type="text" size="1" maxlength="1" name="{{.Name}}" value="{{.Value}}" class="{{.Invalid}}" {{.Readonly}} />
+				    </div>
+					{{end}}
+				</div>
+				<div class="options">
+					<input type="radio" id="evaluate" name="action" value="evaluate" checked/>
+					<label for="evaluate">Evaluate</label>
+					<input type="radio" id="reset" name="action" value="reset"/>
+					<label for="reset">Reset</label>
+					<input type="radio" id="solve" name="action" value="solve"/>
+					<label for="solve">Solve</label>
+					<input type="radio" id="new" name="action" value="new"/>
+					<label for="new">New</label>
+					<select name="blankvalues">
+					  <option value="">--Select blank cells--</option>
+					  <option value="0">0</option>
+					  <option value="10">10</option>
+                      <option value="20">20</option>
+                      <option value="30">30</option>
+					  <option value="40">40</option>
+                      <option value="50">50</option>
+                      <option value="60">60</option>
+					  <option value="70">70</option>
+                      <option value="80">80</option>
+					</select>
+				</div>
+				<input type="submit" value="Submit" />
+				<input type="text" size="30" name="status" value="{{.Status.Message}}" class="{{.Status.State}}" readonly />
+			</fieldset>
+		</form>
+	</body>
+</html>

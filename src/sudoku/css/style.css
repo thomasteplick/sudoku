@@ -1,0 +1,57 @@
+div.grid {
+    display: grid;
+    grid-template-columns: repeat(9, 1fr);
+    grid-template-rows: repeat(9, 1fr);
+    width: 450px;
+    height: 450px;
+    border-top: 3px solid black;
+    border-bottom: 3px solid black;
+    border-left: 3px solid black;
+}
+ 
+.item {
+    padding-top: 10px;
+    text-align: center;
+    border: 1px dotted #999;
+    align-content: center;
+}
+
+.grid div:nth-child(3n) {
+border-right: 3px solid black;
+}
+
+.grid div:nth-child(19), .grid div:nth-child(20), .grid div:nth-child(21), .grid div:nth-child(22), .grid div:nth-child(23), .grid div:nth-child(24),
+.grid div:nth-child(25), .grid div:nth-child(26), .grid div:nth-child(27) {
+border-bottom: 3px solid black;
+}
+
+.grid div:nth-child(46), .grid div:nth-child(47), .grid div:nth-child(48), .grid div:nth-child(49), .grid div:nth-child(50), .grid div:nth-child(51),
+.grid div:nth-child(52), .grid div:nth-child(53), .grid div:nth-child(54) {
+border-bottom: 3px solid black;
+}
+
+.item input[type="text"] {
+    font-family: sans-serif;
+    font-size: 18px;
+    text-align: center;
+    width: 30px;
+    vertical-align: center;
+}
+
+.options input {
+    display: inline;
+}
+
+label {
+    font-size: 16px;
+    font-family: sans-serif;
+}
+
+.item input[type="text"].Invalid {
+    background-color: red;
+}
+
+input[type="text"]:read-only {
+    background-color: lightgrey;
+}
+
