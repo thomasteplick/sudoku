@@ -330,11 +330,14 @@ func resetSudokuSubmit(w http.ResponseWriter, r *http.Request) {
 func newSudokuSubmit(w http.ResponseWriter, r *http.Request) {
 
 	var (
-		n   int
-		err error
+		n      int
+		err    error
+		s      Grid // Grid to use in solver functions
+		sudoku SudokuT
 	)
+	sudoku.Grid = make(map[string]Cell)
 
-	// Get the number of readonly blank cells
+	// Get the number of blank cells
 	fv := r.FormValue("blankvalues")
 	if len(fv) > 0 {
 		if n, err = strconv.Atoi(fv); err != nil {
@@ -344,38 +347,93 @@ func newSudokuSubmit(w http.ResponseWriter, r *http.Request) {
 		log.Fatal("No blank cells specified in dropdown list.")
 	}
 
-	// Open new file with fv blank (0) values
-	file := "../../src/sudoku/grids/sudoku" + fv + ".txt"
-	f, err := os.Open(file)
-	if err != nil {
-		log.Fatalf("Error opening %s: %v\n", file, err)
+	// seed the random number generator
+	rand.Seed(time.Now().Unix())
+
+	// trials or attempts to solve the Sudoku puzzle
+	trial := 0
+	results := make(chan result)
+	begin := time.Now()
+	fmt.Printf("\nStart time: %v\n", begin.Format(time.StampMilli))
+trials:
+	for trial < nTrials {
+		trial++
+		fmt.Printf("Trial %v\n", trial)
+		nsets := 0
+		// loop for nsets
+	sets:
+		for {
+			// launch a goroutine for each 3x3 subregion to find results
+			for r := 0; r < rows; r += rows / 3 {
+				for c := 0; c < cols; c += cols / 3 {
+					go s.getResult(int(r), int(c), results)
+				}
+			}
+
+			nchoices := 10 // how many digits available for this cell in a sub-region
+			var cell result
+			noneAssigned := 0 // number of subregions that are completely assigned values
+			// Collect results and find subregion with smallest number of satisfying digits
+			for i := 0; i < rows; i++ {
+				r := <-results
+				if r.notAssigned == 0 {
+					noneAssigned++
+				} else if r.nchoices < nchoices {
+					nchoices = r.nchoices
+					cell = r
+				}
+			}
+
+			// puzzle solved if all cells filled with valid values
+			if noneAssigned == rows {
+				// Show the Sudoku board that is the solution
+				fmt.Printf("\n                Solved Sudoku                    \n")
+				break trials
+			}
+
+			// no solution if nchoices is zero in any subregion with unassigned cells
+			// start a new trial
+			if nchoices == 0 {
+				NewSudoku(r, &sudoku, &s)
+				fmt.Printf("Number of sets done for trial %v is %v. Start new trial.\n",
+					trial, nsets)
+				break sets
+			}
+
+			// Assign a random value for the cell and continue this trial
+			n := rand.Intn(nchoices)
+			s.Set(cell.y, cell.x, cell.choices[n])
+			nsets++
+		}
 	}
-	defer f.Close()
-	fmt.Printf("Opened file %v with %v blank cells.\n", file, n)
+	fmt.Printf("\nEnd time: %v, run time: %v\n", time.Now().Format(time.StampMilli), time.Since(begin))
 
-	var sudoku SudokuT
-	sudoku.Grid = make(map[string]Cell)
+	// Add nflag zeros in random positions to the Grid
+	for i := 0; i < n; i++ {
+		r := rand.Intn(rows)
+		c := rand.Intn(cols)
+		// check if already set to zero and try r,c another if so
+		for s[r][c] == 0 {
+			r = rand.Intn(rows)
+			c = rand.Intn(cols)
+		}
+		s[r][c] = 0
+	}
 
-	// Fill in the grid
-	input := bufio.NewScanner(f)
-	row := 0
-	for input.Scan() {
-		line := input.Text()
-		// Each line has 9 values:  numbers 1-9
-		values := strings.Split(line, " ")
-		col := 0
-		for _, val := range values {
+	// Fill in the sudoku
+	// Loop over the rows/columns
+	for row := 0; row < rows; row++ {
+		for col := 0; col < cols; col++ {
 			subgrid := (row/3)*3 + col/3
 			name := fmt.Sprintf("%d_%d_%d", row, col, subgrid)
-			// Mark as readonly in name by appending "_ro"
-			if val != "0" {
+			// Set readonly cell by appending "_ro"
+			if s[row][col] > 0 {
+				val := strconv.Itoa(s[row][col])
 				sudoku.Grid[name] = Cell{Name: name + "_ro", Value: val, Invalid: "valid", Readonly: "readonly"}
 			} else {
 				sudoku.Grid[name] = Cell{Name: name, Value: "", Invalid: "valid", Readonly: ""}
 			}
-			col++
 		}
-		row++
 	}
 
 	// Set puzzle status
@@ -548,8 +606,6 @@ func (g *Grid) Set(row, col, digit int) error {
 
 // NewSudoku constructs a Sudoku board, initializes it, and sets fixed digits
 func NewSudoku(r *http.Request, sudoku *SudokuT, s *Grid) {
-	// SudokuT to use in HTML parse and execute
-	// Grid to use in solver functions
 
 	// Loop over the rows/columns, get the Request form values, insert into the grid
 	// Transfer sudoku struct to solution matrix, replace blanks with zeros
@@ -578,6 +634,9 @@ func NewSudoku(r *http.Request, sudoku *SudokuT, s *Grid) {
 // solveSudokuSubmit processes the Sudoku form submission for the solve option
 func solveSudokuSubmit(w http.ResponseWriter, r *http.Request) {
 
+	// SudokuT to use in HTML parse and execute
+	// Grid to use in solver functions
+
 	var sudoku SudokuT
 	sudoku.Grid = make(map[string]Cell)
 
@@ -585,6 +644,9 @@ func solveSudokuSubmit(w http.ResponseWriter, r *http.Request) {
 	var s Grid
 
 	NewSudoku(r, &sudoku, &s)
+
+	// seed the random number generator
+	rand.Seed(time.Now().Unix())
 
 	// trials or attempts to solve the Sudoku puzzle
 	trial := 0
